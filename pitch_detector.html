@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 和弦反應訓練器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 50%, #9b59b6 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fff, #f39c12);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .settings-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .practice-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            display: none;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-label {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+            color: #f39c12;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="range"] {
+            padding: 0;
+            background: transparent;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #f39c12;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        select:focus, input[type="range"]:focus {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .checkbox-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .checkbox-item.selected {
+            background: rgba(52, 152, 219, 0.3);
+            border-color: #3498db;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        .volume-control, .pitch-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+            margin: 10px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.6);
+        }
+
+        button.start-btn {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+            font-size: 1.5rem;
+            padding: 20px 40px;
+        }
+
+        button.start-btn:hover {
+            box-shadow: 0 10px 25px rgba(39, 174, 96, 0.6);
+        }
+
+        button.secondary {
+            background: linear-gradient(45deg, #34495e, #2c3e50);
+            box-shadow: 0 5px 15px rgba(52, 73, 94, 0.4);
+        }
+
+        button.secondary:hover {
+            box-shadow: 0 10px 25px rgba(52, 73, 94, 0.6);
+        }
+
+        .chord-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 30px 0;
+            text-shadow: 0 3px 15px rgba(0,0,0,0.3);
+            min-height: 120px;
+            display: flex;
+            flex-direction: column; /* 垂直排列 */
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 新增：統一核心內容的樣式 */
+        .practice-content h1, .practice-content h2, .practice-content h3 {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 0 3px 15px rgba(0,0,0,0.3);
+        }
+        
+        .practice-content h2 {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .practice-content h3 {
+            font-size: 2rem;
+            margin-top: 20px;
+        }
+
+
+        .timer-display {
+            font-size: 2rem;
+            margin: 20px 0;
+            color: #f39c12;
+        }
+
+        .status-display {
+            font-size: 1.3rem;
+            margin: 15px 0;
+            min-height: 30px;
+        }
+
+        .result-display {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 20px 0;
+            min-height: 40px;
+        }
+
+        .detected-notes {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+
+        .volume-indicator {
+            width: 100%;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .volume-level {
+            height: 100%;
+            background: linear-gradient(to right, #27ae60, #f39c12, #e74c3c);
+            width: 0%;
+            border-radius: 8px;
+            transition: width 0.1s ease;
+        }
+
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .info-text {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: center;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+        
+        .live-pitch-display {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .live-note {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .live-frequency, .live-cents {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .tuner-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tuner-indicator {
+            width: 4px;
+            height: 100%;
+            background: #00ff88;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+            box-shadow: 0 0 10px #00ff88;
+            transition: left 0.1s ease;
+        }
+
+        .tuner-center {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.6);
+            transform: translateX(-50%);
+        }
+        
+        #volumeThresholdDisplay, #pitchSensitivityDisplay {
+            width: 50px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .chord-display {
+                font-size: 2.5rem;
+            }
+            
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 和弦反應訓練器</h1>
+            <div class="subtitle">音高辨識 + 和弦練習</div>
+        </div>
+
+        <div id="settingsPanel" class="settings-panel">
+            <div class="setting-group">
+                <label class="setting-label">1. 選擇和弦類型</label>
+                <select id="chordType">
+                    <option value="triads">三和弦 (Triads)</option>
+                    <option value="seventh">七和弦 (Seventh Chords)</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">2. 選擇和弦組成</label>
+                <div id="chordCompositions" class="checkbox-group">
+                    </div>
+            </div>
+            
+            <div class="setting-group">
+                <label class="setting-label">3. 麥克風音量門檻值</label>
+                <div class="volume-control">
+                    <span>安靜</span>
+                    <input type="range" id="volumeThreshold" name="volumeThreshold" min="0.001" max="0.1" step="0.001" value="0.003">
+                    <span>大聲</span>
+                    <span id="volumeThresholdDisplay">0.003</span>
+                </div>
+                <div class="info-text" style="margin-top: 10px;">
+                    數值越低越敏感，越高越需要大聲才能偵測。<br>
+                    若背景雜音較多，請提高此數值。
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">4. 音高偵測敏感度</label>
+                <div class="pitch-control">
+                    <span>敏感</span>
+                    <input type="range" id="pitchSensitivity" name="pitchSensitivity" min="0.75" max="0.95" step="0.01" value="0.85">
+                    <span>穩定</span>
+                    <span id="pitchSensitivityDisplay">0.85</span>
+                </div>
+                <div class="info-text" style="margin-top: 10px;">
+                    數值越低，越容易偵測到音高，但可能不穩定。<br>
+                    數值越高，越穩定，但可能無法偵測到微弱音高。
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">5. 選擇開始音</label>
+                <select id="startNote">
+                    <option value="root">根音 (Root)</option>
+                    <option value="third">三音 (Third)</option>
+                    <option value="fifth">五音 (Fifth)</option>
+                    <option value="seventh">七音 (Seventh)</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">6. 選擇樂器調性</label>
+                <select id="instrumentKey">
+                    <option value="C">C調 (鋼琴、吉他)</option>
+                    <option value="Bb">Bb調 (薩克斯風、小號)</option>
+                    <option value="Eb">Eb調 (中音薩克斯風)</option>
+                    <option value="F">F調 (法國號)</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">7. 選擇答題時間</label>
+                <select id="timerDuration">
+                    <option value="5">5秒</option>
+                    <option value="10" selected>10秒</option>
+                    <option value="15">15秒</option>
+                    <option value="20">20秒</option>
+                    <option value="25">25秒</option>
+                    <option value="30">30秒</option>
+                </select>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="start-btn" onclick="startPractice()">🎼 開始練習</button>
+            </div>
+
+            <div class="info-text" style="margin-top: 20px;">
+                💡 請確保麥克風已連接並允許瀏覽器使用麥克風權限<br>
+                <button onclick="checkAudioDevices()" style="margin-top: 10px; padding: 8px 15px; font-size: 0.9rem;">🎤 檢查音頻設備</button>
+            </div>
+        </div>
+
+        <div id="practicePanel" class="practice-panel">
+            <div class="chord-display practice-content" id="chordDisplay">
+                <h1 id="chordNameDisplay">準備中...</h1>
+                <p id="instructionDisplay"></p>
+            </div>
+            
+            <div class="timer-display" id="timerDisplay">⏱️ 剩餘時間: -- 秒</div>
+            
+            <div class="live-pitch-display">
+                <div class="live-note" id="noteDisplay">--</div>
+                <div class="live-frequency" id="frequencyDisplay">-- Hz</div>
+                <div class="live-cents" id="centsDisplay">-- cents</div>
+                <div class="volume-indicator">
+                    <div class="volume-level" id="volumeLevel"></div>
+                </div>
+                <div class="tuner-bar">
+                    <div class="tuner-center"></div>
+                    <div class="tuner-indicator" id="tunerIndicator"></div>
+                </div>
+            </div>
+
+            <div class="status-display" id="statusDisplay">正在聆聽...</div>
+            
+            <div class="detected-notes">
+                <strong>檢測到的音符：</strong>
+                <span id="detectedNotes">--</span>
+            </div>
+            
+            <div class="result-display" id="resultDisplay"></div>
+
+            <div class="control-buttons">
+                <button onclick="showAnswer()">🔍 顯示答案</button>
+                <button onclick="playChordAudio()">🔊 播放和弦</button>
+                <button onclick="nextQuestion()">⭐ 下一題</button>
+                <button class="secondary" onclick="backToSettings()">⚙️ 返回設定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== 和弦資料庫 =====
+        const chordCompositions = {
+            triads: ["大三和弦", "小三和弦", "增三和弦", "減三和弦"],
+            seventh: ["大七和弦", "小七和弦", "屬七和弦", "半減七和弦", "減七和弦", "小大七和弦", "屬增七和弦", "增大七和弦"]
+        };
+
+        const allChords = {
+            "大三和弦": {
+                "C": ["C", "E", "G"], "C#": ["C#", "F", "G#"], "Db": ["Db", "F", "Ab"],
+                "D": ["D", "F#", "A"], "D#": ["D#", "G", "A#"], "Eb": ["Eb", "G", "Bb"],
+                "E": ["E", "G#", "B"], "F": ["F", "A", "C"], "F#": ["F#", "A#", "C#"],
+                "Gb": ["Gb", "Bb", "Db"], "G": ["G", "B", "D"], "G#": ["G#", "C", "D#"],
+                "Ab": ["Ab", "C", "Eb"], "A": ["A", "C#", "E"], "A#": ["A#", "D", "F"],
+                "Bb": ["Bb", "D", "F"], "B": ["B", "D#", "F#"]
+            },
+            "小三和弦": {
+                "Cm": ["C", "Eb", "G"], "C#m": ["C#", "E", "G#"], "Dm": ["D", "F", "A"],
+                "D#m": ["D#", "F#", "A#"], "Ebm": ["Eb", "Gb", "Bb"], "Em": ["E", "G", "B"],
+                "Fm": ["F", "Ab", "C"], "F#m": ["F#", "A", "C#"], "Gm": ["G", "Bb", "D"],
+                "G#m": ["G#", "B", "D#"], "Abm": ["Ab", "B", "Eb"], "Am": ["A", "C", "E"],
+                "A#m": ["A#", "C#", "F"], "Bbm": ["Bb", "Db", "F"], "Bm": ["B", "D", "F#"]
+            },
+            "增三和弦": {
+                "Caug": ["C", "E", "G#"], "C#aug": ["C#", "F", "A"], "Daug": ["D", "F#", "A#"],
+                "Ebaug": ["Eb", "G", "B"], "Eaug": ["E", "G#", "C"], "Faug": ["F", "A", "C#"],
+                "F#aug": ["F#", "A#", "D"], "Gaug": ["G", "B", "D#"], "Abaug": ["Ab", "C", "E"],
+                "Aaug": ["A", "C#", "F"], "Bbaug": ["Bb", "D", "F#"], "Baug": ["B", "D#", "G"]
+            },
+            "減三和弦": {
+                "Cdim": ["C", "Eb", "Gb"], "C#dim": ["C#", "E", "G"], "Ddim": ["D", "F", "Ab"],
+                "Ebdim": ["Eb", "Gb", "A"], "Edim": ["E", "G", "Bb"], "Fdim": ["F", "Ab", "B"],
+                "F#dim": ["F#", "A", "C"], "Gdim": ["G", "Bb", "Db"], "Abdim": ["Ab", "B", "D"],
+                "Adim": ["A", "C", "Eb"], "Bbdim": ["Bb", "Db", "E"], "Bdim": ["B", "D", "F"]
+            },
+            "大七和弦": {
+                "Cmaj7": ["C", "E", "G", "B"], "Dbmaj7": ["Db", "F", "Ab", "C"], "Dmaj7": ["D", "F#", "A", "C#"],
+                "Ebmaj7": ["Eb", "G", "Bb", "D"], "Emaj7": ["E", "G#", "B", "D#"], "Fmaj7": ["F", "A", "C", "E"],
+                "F#maj7": ["F#", "A#", "C#", "F"], "Gmaj7": ["G", "B", "D", "F#"],
+                "Abmaj7": ["Ab", "C", "Eb", "G"], "Amaj7": ["A", "C#", "E", "G#"], 
+                "Bbmaj7": ["Bb", "D", "F", "A"], "Bmaj7": ["B", "D#", "F#", "A#"]
+            },
+            "小七和弦": {
+                "Cm7": ["C", "Eb", "G", "Bb"], "C#m7": ["C#", "E", "G#", "B"], "Dm7": ["D", "F", "A", "C"],
+                "Ebm7": ["Eb", "Gb", "Bb", "Db"], "Em7": ["E", "G", "B", "D"], "Fm7": ["F", "Ab", "C", "Eb"],
+                "F#m7": ["F#", "A", "C#", "E"], "Gm7": ["G", "Bb", "D", "F"], "Abm7": ["Ab", "B", "Eb", "Gb"],
+                "Am7": ["A", "C", "E", "G"], "Bbm7": ["Bb", "Db", "F", "Ab"], "Bm7": ["B", "D", "F#", "A"]
+            },
+            "屬七和弦": {
+                "C7": ["C", "E", "G", "Bb"], "C#7": ["C#", "F", "G#", "B"], "D7": ["D", "F#", "A", "C"],
+                "Eb7": ["Eb", "G", "Bb", "Db"], "E7": ["E", "G#", "B", "D"], "F7": ["F", "A", "C", "Eb"],
+                "F#7": ["F#", "A#", "C#", "E"], "G7": ["G", "B", "D", "F"], "Ab7": ["Ab", "C", "Eb", "Gb"],
+                "A7": ["A", "C#", "E", "G"], "Bb7": ["Bb", "D", "F", "Ab"], "B7": ["B", "D#", "F#", "A"]
+            },
+            "半減七和弦": {
+                "Cm7b5": ["C", "Eb", "Gb", "Bb"], "C#m7b5": ["C#", "E", "G", "B"], 
+                "Dm7b5": ["D", "F", "Ab", "C"], "Ebm7b5": ["Eb", "Gb", "A", "Db"],
+                "Em7b5": ["E", "G", "Bb", "D"], "Fm7b5": ["F", "Ab", "B", "Eb"],
+                "F#m7b5": ["F#", "A", "C", "E"], "Gm7b5": ["G", "Bb", "Db", "F"],
+                "Abm7b5": ["Ab", "B", "D", "Gb"], "Am7b5": ["A", "C", "Eb", "G"],
+                "Bbm7b5": ["Bb", "Db", "E", "Ab"], "Bm7b5": ["B", "D", "F", "A"]
+            },
+            "減七和弦": {
+                "Cdim7": ["C", "Eb", "Gb", "A"], "C#dim7": ["C#", "E", "G", "Bb"],
+                "Ddim7": ["D", "F", "Ab", "B"], "Ebdim7": ["Eb", "Gb", "A", "C"],
+                "Edim7": ["E", "G", "Bb", "Db"], "Fdim7": ["F", "Ab", "B", "D"],
+                "F#dim7": ["F#", "A", "C", "Eb"], "Gdim7": ["G", "Bb", "Db", "E"],
+                "Abdim7": ["Ab", "B", "D", "F"], "Adim7": ["A", "C", "Eb", "Gb"],
+                "Bbdim7": ["Bb", "Db", "E", "G"], "Bdim7": ["B", "D", "F", "Ab"]
+            },
+            "小大七和弦": {
+                "CmM7": ["C", "Eb", "G", "B"], "C#mM7": ["C#", "E", "G#", "C"],
+                "DmM7": ["D", "F", "A", "C#"], "EbmM7": ["Eb", "Gb", "Bb", "D"],
+                "EmM7": ["E", "G", "B", "D#"], "FmM7": ["F", "Ab", "C", "E"],
+                "F#mM7": ["F#", "A", "C#", "F"], "GmM7": ["G", "Bb", "D", "F#"],
+                "AbmM7": ["Ab", "B", "Eb", "G"], "AmM7": ["A", "C", "E", "G#"],
+                "BbmM7": ["Bb", "Db", "F", "A"], "BmM7": ["B", "D", "F#", "A#"]
+            },
+            "屬增七和弦": {
+                "C7#5": ["C", "E", "G#", "Bb"], "C#7#5": ["C#", "F", "A", "B"],
+                "D7#5": ["D", "F#", "A#", "C"], "Eb7#5": ["Eb", "G", "B", "Db"],
+                "E7#5": ["E", "G#", "C", "D"], "F7#5": ["F", "A", "C#", "Eb"],
+                "F#7#5": ["F#", "A#", "D", "E"], "G7#5": ["G", "B", "D#", "F"],
+                "Ab7#5": ["Ab", "C", "E", "Gb"], "A7#5": ["A", "C#", "F", "G"],
+                "Bb7#5": ["Bb", "D", "F#", "Ab"], "B7#5": ["B", "D#", "G", "A"]
+            },
+            "增大七和弦": {
+                "CaugM7": ["C", "E", "G#", "B"], "C#augM7": ["C#", "F", "A", "C"],
+                "DaugM7": ["D", "F#", "A#", "C#"], "EbaugM7": ["Eb", "G", "B", "D"],
+                "EaugM7": ["E", "G#", "C", "D#"], "FaugM7": ["F", "A", "C#", "E"],
+                "F#augM7": ["F#", "A#", "D", "F"], "GaugM7": ["G", "B", "D#", "F#"],
+                "AbaugM7": ["Ab", "C", "E", "G"], "AaugM7": ["A", "C#", "F", "G#"],
+                "BbaugM7": ["Bb", "D", "F#", "A"], "BaugM7": ["B", "D#", "G", "A#"]
+            }
+        };
+
+        // ===== 移調表 =====
+        const transpositionTable = {
+            "C": 0, "Bb": +10, "Eb": +3, "F": +5
+        };
+
+        const pitchToName = {
+            0: 'C', 1: 'C#', 2: 'D', 3: 'D#', 4: 'E', 5: 'F',
+            6: 'F#', 7: 'G', 8: 'G#', 9: 'A', 10: 'A#', 11: 'B'
+        };
+        
+        // 修正：完整的音符名稱到MIDI音符對照表
+        const noteNameToMidi = {
+            'C': 60, 'C#': 61, 'Db': 61, 'D': 62, 'D#': 63, 'Eb': 63, 'E': 64, 'F': 65,
+            'F#': 66, 'Gb': 66, 'G': 67, 'G#': 68, 'Ab': 68, 'A': 69, 'A#': 70, 'Bb': 70, 'B': 71
+        };
+
+        const baseNotePitches = {
+            'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11
+        };
+
+        // ===== 音高檢測相關變數 =====
+        let audioContext;
+        let microphone;
+        let analyser;
+        let dataArray;
+        let isDetecting = false;
+        let detectedNotes = [];
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        let practiceActive = false;
+        let lastSuccessfulPitch = null;
+        let silenceFrames = 0;
+        const SILENCE_THRESHOLD = 30;
+        
+        // ===== 遊戲狀態 =====
+        let currentAnswer = [];
+        let currentChordName = '';
+        let remainingTime = 0;
+        let timerId = null;
+        
+        // ===== 音頻設備檢測函數 =====
+        async function checkAudioDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioInputs = devices.filter(device => device.kind === 'audioinput');
+                
+                let message = `發現 ${audioInputs.length} 個音頻輸入設備：\n\n`;
+                
+                if (audioInputs.length === 0) {
+                    message = '⚠️ 沒有發現任何音頻輸入設備！\n\n請檢查：\n1. 麥克風是否已連接\n2. 驅動程式是否正確安裝\n3. 系統音頻設定';
+                } else {
+                    audioInputs.forEach((device, index) => {
+                        message += `${index + 1}. ${device.label || '未命名設備'}\n`;
+                    });
+                    message += '\n如果標籤顯示為空，請允許瀏覽器權限後重新檢查。';
+                }
+                
+                alert(message);
+                
+                // 嘗試獲取權限
+                if (audioInputs.length > 0) {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        alert('✅ 麥克風權限已獲取！可以開始練習了。');
+                        stream.getTracks().forEach(track => track.stop());
+                    } catch (error) {
+                        alert(`❌ 麥克風權限被拒絕或設備忙碌：${error.message}`);
+                    }
+                }
+                
+            } catch (error) {
+                alert(`檢查設備時發生錯誤：${error.message}`);
+            }
+        }
+
+        // ===== 音高檢測函數 =====
+        const A4 = 440;
+        const MIN_FREQ = 80;
+        const MAX_FREQ = 1200;
+
+        function getNoteFromFrequency(frequency) {
+            const noteIndex = 12 * (Math.log(frequency / A4) / Math.log(2));
+            return Math.round(noteIndex) + 69;
+        }
+
+        function getFrequencyFromNote(midiNote) {
+            return A4 * Math.pow(2, (midiNote - 69) / 12);
+        }
+
+        function getCentsFromFrequency(frequency, note) {
+            return Math.floor(1200 * Math.log(frequency / getFrequencyFromNote(note)) / Math.log(2));
+        }
+        
+        function updateTunerIndicator(cents) {
+            const indicator = document.getElementById('tunerIndicator');
+            const percent = 50 + (cents / 50) * 50;
+            const clampedPercent = Math.max(0, Math.min(100, percent));
+            indicator.style.left = `${clampedPercent}%`;
+
+            if (Math.abs(cents) <= 5) {
+                indicator.style.background = '#00ff88';
+                indicator.style.boxShadow = '0 0 10px #00ff88';
+            } else {
+                indicator.style.background = '#ffc107';
+                indicator.style.boxShadow = '0 0 10px #ffc107';
+            }
+        }
+
+        // 核心音高偵測演算法 (自相關函數法)
+        function autoCorrelate(buf, sampleRate, sensitivity) {
+            const SIZE = buf.length;
+            let bestOffset = -1;
+            let bestCorrelation = -1;
+
+            // 進行正規化
+            const rms = Math.sqrt(buf.reduce((sum, val) => sum + val * val, 0) / SIZE);
+            if (rms < 0.01) {
+                return null;
+            }
+
+            const c = new Array(SIZE).fill(0);
+            for (let i = 0; i < SIZE; i++) {
+                for (let j = 0; j < SIZE - i; j++) {
+                    c[i] += buf[j] * buf[j + i];
+                }
+            }
+            
+            // 尋找最佳偏移量 (週期)
+            let d = 0;
+            while (d < SIZE && c[d] > 0) {
+                d++;
+            }
+            d = Math.max(0, d - 1);
+
+            // 尋找最高峰
+            let maxVal = -1;
+            let maxIndex = -1;
+            for (let i = d; i < SIZE; i++) {
+                if (c[i] > maxVal) {
+                    maxVal = c[i];
+                    maxIndex = i;
+                }
+            }
+            
+            // 再次確認最高峰，以排除雜訊
+            if (maxIndex === -1 || maxIndex === 0) {
+                return null;
+            }
+
+            const correlation = c[maxIndex] / c[0];
+            
+            if (correlation < sensitivity) {
+                return null;
+            }
+
+            // 進行拋物線內插法以獲得更精確的頻率
+            const a = c[maxIndex - 1];
+            const b = c[maxIndex];
+            const dVal = c[maxIndex + 1];
+            const x = (a - dVal) / (2 * (a - 2 * b + dVal));
+            const T0 = maxIndex + x;
+            
+            const frequency = sampleRate / T0;
+            
+            if (frequency < MIN_FREQ || frequency > MAX_FREQ) {
+                return null;
+            }
+
+            return frequency;
+        }
+
+        function processAudio() {
+            if (!isDetecting || !analyser) return;
+
+            analyser.getFloatTimeDomainData(dataArray);
+            
+            const rms = Math.sqrt(dataArray.reduce((sum, val) => sum + val * val, 0) / dataArray.length);
+            const volumeThreshold = parseFloat(document.getElementById('volumeThreshold').value);
+            const pitchSensitivity = parseFloat(document.getElementById('pitchSensitivity').value);
+            const volumePercent = Math.min(rms * 500, 100);
+            document.getElementById('volumeLevel').style.width = volumePercent + '%';
+
+            let statusText = '';
+            
+            if (rms < volumeThreshold) {
+                statusText = '音量過低，請提高音量或降低門檻值';
+                silenceFrames++;
+                if (silenceFrames > SILENCE_THRESHOLD) {
+                    lastSuccessfulPitch = null;
+                    document.getElementById('noteDisplay').textContent = '--';
+                    document.getElementById('frequencyDisplay').textContent = '-- Hz';
+                    document.getElementById('centsDisplay').textContent = '-- cents';
+                    updateTunerIndicator(0);
+                }
+            } else {
+                silenceFrames = 0;
+                
+                // 使用內建的音高檢測函數
+                const frequency = autoCorrelate(dataArray, audioContext.sampleRate, pitchSensitivity);
+                
+                if (frequency) {
+                    const midiNote = getNoteFromFrequency(frequency);
+                    const noteName = noteNames[midiNote % 12];
+                    const cents = getCentsFromFrequency(frequency, midiNote);
+                    
+                    lastSuccessfulPitch = { frequency, noteName, midiNote, cents };
+                    const transposedNote = transposeNote(noteName, document.getElementById('instrumentKey').value);
+                    if (!detectedNotes.includes(transposedNote)) {
+                        detectedNotes.push(transposedNote);
+                    }
+                } else {
+                    lastSuccessfulPitch = null;
+                }
+            }
+            
+            if (lastSuccessfulPitch) {
+                document.getElementById('noteDisplay').textContent = `${lastSuccessfulPitch.noteName}${Math.floor(lastSuccessfulPitch.midiNote / 12) - 1}`;
+                document.getElementById('frequencyDisplay').textContent = `${lastSuccessfulPitch.frequency.toFixed(2)} Hz`;
+                document.getElementById('centsDisplay').textContent = `${lastSuccessfulPitch.cents} cents`;
+                updateTunerIndicator(lastSuccessfulPitch.cents);
+                statusText = '正在聆聽...';
+            } else {
+                statusText = '無法從訊號中判斷出清晰的音高';
+            }
+            
+            document.getElementById('statusDisplay').textContent = statusText;
+            document.getElementById('detectedNotes').textContent = 
+                detectedNotes.length > 0 ? detectedNotes.join(', ') : '--';
+
+            requestAnimationFrame(processAudio);
+        }
+
+        // ===== 初始化 =====
+        document.addEventListener('DOMContentLoaded', function() {
+            updateChordCompositions();
+            
+            // 監聽設定變更
+            document.getElementById('chordType').addEventListener('change', updateChordCompositions);
+            
+            // 監聽音量門檻值滑動條
+            const volumeThresholdSlider = document.getElementById('volumeThreshold');
+            const volumeThresholdDisplay = document.getElementById('volumeThresholdDisplay');
+            volumeThresholdSlider.addEventListener('input', () => {
+                volumeThresholdDisplay.textContent = volumeThresholdSlider.value;
+            });
+
+            // 監聽音高敏感度滑動條
+            const pitchSensitivitySlider = document.getElementById('pitchSensitivity');
+            const pitchSensitivityDisplay = document.getElementById('pitchSensitivityDisplay');
+            pitchSensitivitySlider.addEventListener('input', () => {
+                pitchSensitivityDisplay.textContent = pitchSensitivitySlider.value;
+            });
+        });
+
+        // ===== 設定更新函數 =====
+        function updateChordCompositions() {
+            const chordType = document.getElementById('chordType').value;
+            const container = document.getElementById('chordCompositions');
+            container.innerHTML = '';
+            
+            const compositions = chordCompositions[chordType] || [];
+            compositions.forEach(comp => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="chord_${comp}" value="${comp}" checked>
+                    <label for="chord_${comp}">${comp}</label>
+                `;
+                
+                div.addEventListener('click', function(e) {
+                    if (e.target.type !== 'checkbox') {
+                        const checkbox = div.querySelector('input[type="checkbox"]');
+                        checkbox.checked = !checkbox.checked;
+                    }
+                    div.classList.toggle('selected', div.querySelector('input').checked);
+                });
+                
+                div.classList.add('selected'); // 預設選中
+                container.appendChild(div);
+            });
+        }
+
+        // ===== 和弦邏輯函數 =====
+        function getPitchNumber(noteName) {
+            const sharps = (noteName.match(/#/g) || []).length;
+            const flats = (noteName.match(/b/g) || []).length;
+            const baseName = noteName.replace(/#/g, '').replace(/b/g, '').toUpperCase();
+            
+            if (!(baseName in baseNotePitches)) return null;
+            
+            let pitchNum = baseNotePitches[baseName];
+            pitchNum = (pitchNum + sharps - flats + 12) % 12;
+            return pitchNum;
+        }
+
+        function transposeNote(note, instrumentKey) {
+            const semitones = transpositionTable[instrumentKey] || 0;
+            const pitchNum = getPitchNumber(note);
+            if (pitchNum === null) return note;
+            const transposedPitch = (pitchNum + semitones) % 12;
+            return pitchToName[transposedPitch];
+        }
+
+        function transposeChord(chordNotes, instrumentKey) {
+            return chordNotes.map(note => transposeNote(note, instrumentKey));
+        }
+
+        function invertChord(chordNotes, startNoteType) {
+            switch(startNoteType) {
+                case 'root': return chordNotes;
+                case 'third': return chordNotes.length >= 2 ? [...chordNotes.slice(1), chordNotes[0]] : chordNotes;
+                case 'fifth': return chordNotes.length >= 3 ? [...chordNotes.slice(2), ...chordNotes.slice(0, 2)] : chordNotes;
+                case 'seventh': return chordNotes.length >= 4 ? [...chordNotes.slice(3), ...chordNotes.slice(0, 3)] : chordNotes;
+                default: return chordNotes;
+            }
+        }
+
+        function checkChordMatch(detected, expected) {
+            const enharmonicMap = {
+                'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb',
+                'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#'
+            };
+
+            const expandedDetected = new Set();
+            detected.forEach(note => {
+                expandedDetected.add(note);
+                if (enharmonicMap[note]) {
+                    expandedDetected.add(enharmonicMap[note]);
+                }
+            });
+
+            const expectedSet = new Set(expected);
+            const missing = expected.filter(note => !expandedDetected.has(note));
+            
+            return {
+                isCorrect: missing.length === 0 && detected.length >= expected.length,
+                missing: missing,
+                detected: detected
+            };
+        }
+
+        // ===== 練習控制函數 =====
+        async function startPractice() {
+            const selectedCompositions = getSelectedCompositions();
+            if (selectedCompositions.length === 0) {
+                alert('請至少選擇一種和弦組成！');
+                return;
+            }
+
+            document.getElementById('settingsPanel').style.display = 'none';
+            document.getElementById('practicePanel').style.display = 'block';
+
+            try {
+                await initializeAudio();
+                nextQuestion();
+                practiceActive = true;
+            } catch (error) {
+                alert(`無法初始化音頻: ${error.message}`);
+                backToSettings();
+            }
+        }
+
+        async function initializeAudio() {
+            if (isDetecting) return;
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('您的瀏覽器不支援音頻設備存取');
+                }
+                
+                let stream = null;
+                const audioConstraints = { 
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false
+                    }
+                };
+                
+                stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+                
+                if (!stream) {
+                    throw new Error('無法存取任何音頻設備。請檢查：\n1. 麥克風是否已連接\n2. 瀏覽器權限是否已允許\n3. 是否有其他應用程式正在使用麥克風');
+                }
+                
+                microphone = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 4096;
+                analyser.smoothingTimeConstant = 0.8;
+                microphone.connect(analyser);
+                dataArray = new Float32Array(analyser.fftSize);
+                
+                isDetecting = true;
+                processAudio();
+                
+            } catch (error) {
+                console.error('音頻初始化錯誤:', error);
+                throw error;
+            }
+        }
+
+        function getSelectedCompositions() {
+            const checkboxes = document.querySelectorAll('#chordCompositions input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function nextQuestion() {
+            if (timerId) {
+                clearTimeout(timerId);
+            }
+
+            detectedNotes = [];
+            document.getElementById('detectedNotes').textContent = '--';
+            document.getElementById('resultDisplay').textContent = '';
+            document.getElementById('volumeLevel').style.width = '0%';
+            document.getElementById('noteDisplay').textContent = '--';
+            document.getElementById('frequencyDisplay').textContent = '-- Hz';
+            document.getElementById('centsDisplay').textContent = '-- cents';
+            updateTunerIndicator(0);
+            lastSuccessfulPitch = null;
+            silenceFrames = 0;
+
+            const selectedCompositions = getSelectedCompositions();
+            if (selectedCompositions.length === 0) {
+                document.getElementById('chordNameDisplay').textContent = '請返回設定選擇和弦類型！';
+                document.getElementById('instructionDisplay').textContent = '';
+                return;
+            }
+
+            const randomComposition = selectedCompositions[Math.floor(Math.random() * selectedCompositions.length)];
+            const chordsOfType = allChords[randomComposition];
+            const chordNames = Object.keys(chordsOfType);
+            const randomChordName = chordNames[Math.floor(Math.random() * chordNames.length)];
+            
+            currentChordName = randomChordName;
+            let chordNotes = chordsOfType[randomChordName];
+            
+            const startNote = document.getElementById('startNote').value;
+            const instrumentKey = document.getElementById('instrumentKey').value;
+            
+            const invertedNotes = invertChord(chordNotes, startNote);
+            const transposedNotes = transposeChord(invertedNotes, instrumentKey);
+            
+            currentAnswer = transposedNotes;
+
+            document.getElementById('chordNameDisplay').textContent = `${randomChordName}`;
+            document.getElementById('instructionDisplay').textContent = `請用樂器演奏`;
+            
+            document.getElementById('statusDisplay').textContent = '正在聆聽...';
+            document.getElementById('statusDisplay').style.color = '#3498db';
+
+            remainingTime = parseInt(document.getElementById('timerDuration').value);
+            updateTimer();
+        }
+
+        function updateTimer() {
+            document.getElementById('timerDisplay').textContent = `⏱️ 剩餘時間: ${remainingTime} 秒`;
+            
+            if (remainingTime > 0) {
+                const result = checkChordMatch(detectedNotes, currentAnswer);
+                if (result.isCorrect) {
+                    showResult(true, result);
+                    clearTimeout(timerId);
+                    setTimeout(nextQuestion, 2000); 
+                    return;
+                }
+                
+                remainingTime--;
+                timerId = setTimeout(updateTimer, 1000);
+            } else {
+                const result = checkChordMatch(detectedNotes, currentAnswer);
+                showResult(result.isCorrect, result);
+            }
+        }
+
+        // 修改後的 showResult 函數
+        function showResult(isCorrect, result) {
+            const resultDisplay = document.getElementById('resultDisplay');
+            const statusDisplay = document.getElementById('statusDisplay');
+            
+            if (isCorrect) {
+                resultDisplay.textContent = '✅ 正確！';
+                resultDisplay.style.color = '#27ae60';
+                statusDisplay.textContent = '檢測完成';
+                statusDisplay.style.color = '#27ae60';
+            } else {
+                resultDisplay.textContent = '❌ 錯誤或不完整';
+                resultDisplay.style.color = '#e74c3c';
+                statusDisplay.textContent = `缺少: ${result.missing.join(', ')}`;
+                statusDisplay.style.color = '#e74c3c';
+            }
+            
+            // 使用新結構，與題目頁面格式一致
+            document.getElementById('chordNameDisplay').textContent = `期望音符: ${currentAnswer.join(', ')}`;
+            document.getElementById('instructionDisplay').textContent = `檢測到: ${result.detected.join(', ')}`;
+        }
+
+        // 修改後的 showAnswer 函數
+        function showAnswer() {
+            const answerText = `正確答案: ${currentAnswer.join(', ')}`;
+            document.getElementById('chordNameDisplay').textContent = `${currentChordName}`;
+            document.getElementById('instructionDisplay').textContent = `${answerText}`;
+
+            document.getElementById('statusDisplay').textContent = '答案已顯示';
+            document.getElementById('statusDisplay').style.color = '#f39c12';
+        }
+
+        // ===== 修正後的和弦播放函數 =====
+        function playChordAudio() {
+            if (!audioContext) {
+                alert('請先開始練習以初始化音頻系統');
+                return;
+            }
+
+            // 確保音頻上下文處於運行狀態
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            const duration = 2.5; // 增加播放時間
+            const attackTime = 0.1;
+            const releaseTime = 0.3;
+            
+            // 為每個音符創建振盪器
+            currentAnswer.forEach((noteName, index) => {
+                // 修正：使用更可靠的音符到頻率轉換
+                let midiNote = noteNameToMidi[noteName];
+                
+                // 如果找不到直接對應，嘗試基礎音符計算
+                if (midiNote === undefined) {
+                    const pitchNum = getPitchNumber(noteName);
+                    if (pitchNum !== null) {
+                        midiNote = 60 + pitchNum; // C4 = 60
+                    }
+                }
+                
+                if (midiNote !== undefined) {
+                    const frequency = getFrequencyFromNote(midiNote);
+                    
+                    // 創建振盪器和增益節點
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    // 設定波形類型（使用正弦波產生柔和音色）
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                    
+                    // 設定音量包絡（ADSR）
+                    const startTime = audioContext.currentTime + (index * 0.05); // 輕微延遲每個音符
+                    gainNode.gain.setValueAtTime(0, startTime);
+                    gainNode.gain.linearRampToValueAtTime(0.2, startTime + attackTime); // 起音
+                    gainNode.gain.setValueAtTime(0.2, startTime + duration - releaseTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration); // 釋音
+                    
+                    // 連接音頻節點
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    // 啟動和停止振盪器
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + duration);
+                }
+            });
+
+            // 更新狀態顯示
+            document.getElementById('statusDisplay').textContent = '正在播放和弦...';
+            document.getElementById('statusDisplay').style.color = '#9b59b6';
+            
+            // 播放完成後更新狀態
+            setTimeout(() => {
+                if (document.getElementById('statusDisplay').textContent === '正在播放和弦...') {
+                    document.getElementById('statusDisplay').textContent = '播放完成';
+                    document.getElementById('statusDisplay').style.color = '#27ae60';
+                }
+            }, duration * 1000 + 500);
+        }
+
+        function backToSettings() {
+            isDetecting = false;
+            
+            if (timerId) {
+                clearTimeout(timerId);
+            }
+            
+            if (microphone && microphone.mediaStream) {
+                microphone.mediaStream.getTracks().forEach(track => track.stop());
+            }
+            
+            if (audioContext && audioContext.state !== 'closed') {
+                audioContext.close();
+            }
+
+            document.getElementById('practicePanel').style.display = 'none';
+            document.getElementById('settingsPanel').style.display = 'block';
+            
+            detectedNotes = [];
+            currentAnswer = [];
+            remainingTime = 0;
+            practiceActive = false;
+            lastSuccessfulPitch = null;
+            silenceFrames = 0;
+        }
+
+        // ===== 鍵盤快捷鍵 =====
+        document.addEventListener('keydown', (e) => {
+            if (practiceActive) {
+                switch(e.code) {
+                    case 'Space':
+                        e.preventDefault();
+                        nextQuestion();
+                        break;
+                    case 'KeyA':
+                        e.preventDefault();
+                        showAnswer();
+                        break;
+                    case 'KeyP':
+                        e.preventDefault();
+                        playChordAudio();
+                        break;
+                    case 'Escape':
+                        e.preventDefault();
+                        backToSettings();
+                        break;
+                }
+            }
+        });
+
+        window.addEventListener('load', () => {
+            console.log('和弦訓練器已載入完成');
+        });
+    </script>
+</body>
+</html>
