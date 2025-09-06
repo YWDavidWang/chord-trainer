@@ -484,7 +484,7 @@
             <div class="control-buttons">
                 <button onclick="showAnswer()">🔍 顯示答案</button>
                 <button onclick="playChordAudio()">🔊 播放和弦</button>
-                <button onclick="nextQuestion()">⭐ 下一題</button>
+                <button onclick="nextQuestion()">⏭ 下一題</button>
                 <button class="secondary" onclick="backToSettings()">⚙️ 返回設定</button>
             </div>
         </div>
@@ -586,9 +586,12 @@
             }
         };
 
-        // ===== 移調表 =====
+        // ===== 移調表 (修正：根據實際樂器移調) =====
         const transpositionTable = {
-            "C": 0, "Bb": +10, "Eb": +3, "F": +5
+            "C": 0,     // C調樂器：不移調
+            "Bb": +10,    // Bb調樂器：向上大二度 (2半音)
+            "Eb": +3,    // Eb調樂器：向上大六度 (9半音)  
+            "F": +5      // F調樂器：向上完全五度 (7半音)
         };
 
         const pitchToName = {
@@ -648,7 +651,7 @@
                 if (audioInputs.length > 0) {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        alert('✅ 麥克風權限已獲取！可以開始練習了。');
+                        alert('✅ 麥克風權限已獲取，可以開始練習了。');
                         stream.getTracks().forEach(track => track.stop());
                     } catch (error) {
                         alert(`❌ 麥克風權限被拒絕或設備忙碌：${error.message}`);
@@ -791,9 +794,10 @@
                     const cents = getCentsFromFrequency(frequency, midiNote);
                     
                     lastSuccessfulPitch = { frequency, noteName, midiNote, cents };
-                    const transposedNote = transposeNote(noteName, document.getElementById('instrumentKey').value);
-                    if (!detectedNotes.includes(transposedNote)) {
-                        detectedNotes.push(transposedNote);
+                    
+                    // 直接記錄檢測到的實際音符，不進行任何移調
+                    if (!detectedNotes.includes(noteName)) {
+                        detectedNotes.push(noteName);
                     }
                 } else {
                     lastSuccessfulPitch = null;
@@ -880,6 +884,7 @@
             return pitchNum;
         }
 
+        // 修正：移調函數用於生成題目答案
         function transposeNote(note, instrumentKey) {
             const semitones = transpositionTable[instrumentKey] || 0;
             const pitchNum = getPitchNumber(note);
@@ -1031,6 +1036,7 @@
             const instrumentKey = document.getElementById('instrumentKey').value;
             
             const invertedNotes = invertChord(chordNotes, startNote);
+            // 修正：根據選擇的樂器移調題目
             const transposedNotes = transposeChord(invertedNotes, instrumentKey);
             
             currentAnswer = transposedNotes;
