@@ -197,12 +197,11 @@
             text-shadow: 0 3px 15px rgba(0,0,0,0.3);
             min-height: 120px;
             display: flex;
-            flex-direction: column; /* 垂直排列 */
+            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
         
-        /* 新增：統一核心內容的樣式 */
         .practice-content h1, .practice-content h2, .practice-content h3 {
             font-size: 4rem;
             font-weight: bold;
@@ -219,7 +218,6 @@
             font-size: 2rem;
             margin-top: 20px;
         }
-
 
         .timer-display {
             font-size: 2rem;
@@ -246,6 +244,15 @@
             padding: 20px;
             margin: 20px 0;
             font-size: 1.2rem;
+        }
+
+        .sequence-display {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .volume-indicator {
@@ -363,7 +370,7 @@
     <div class="container">
         <div class="header">
             <h1>🎵 和弦反應訓練器</h1>
-            <div class="subtitle">音高辨識 + 和弦練習</div>
+            <div class="subtitle">音高辨識 + 和弦練習 (序列檢測版)</div>
         </div>
 
         <div id="settingsPanel" class="settings-panel">
@@ -474,9 +481,9 @@
 
             <div class="status-display" id="statusDisplay">正在聆聽...</div>
             
-            <div class="detected-notes">
-                <strong>檢測到的音符：</strong>
-                <span id="detectedNotes">--</span>
+            <div class="sequence-display">
+                <strong>偵測序列:</strong>
+                <div id="detectedSequence">--</div>
             </div>
             
             <div class="result-display" id="resultDisplay"></div>
@@ -484,7 +491,8 @@
             <div class="control-buttons">
                 <button onclick="showAnswer()">🔍 顯示答案</button>
                 <button onclick="playChordAudio()">🔊 播放和弦</button>
-                <button onclick="nextQuestion()">⏭ 下一題</button>
+                <button onclick="nextQuestion()">⭐ 下一題</button>
+                <button onclick="resetSequence()">🔄 重設序列</button>
                 <button class="secondary" onclick="backToSettings()">⚙️ 返回設定</button>
             </div>
         </div>
@@ -586,7 +594,7 @@
             }
         };
 
-        // ===== 移調表 (修正：根據實際樂器移調) =====
+        // ===== 移調表 =====
         const transpositionTable = {
             "C": 0,     // C調樂器：不移調
             "Bb": +10,    // Bb調樂器：向上大二度 (2半音)
@@ -599,7 +607,6 @@
             6: 'F#', 7: 'G', 8: 'G#', 9: 'A', 10: 'A#', 11: 'B'
         };
         
-        // 修正：完整的音符名稱到MIDI音符對照表
         const noteNameToMidi = {
             'C': 60, 'C#': 61, 'Db': 61, 'D': 62, 'D#': 63, 'Eb': 63, 'E': 64, 'F': 65,
             'F#': 66, 'Gb': 66, 'G': 67, 'G#': 68, 'Ab': 68, 'A': 69, 'A#': 70, 'Bb': 70, 'B': 71
@@ -615,12 +622,15 @@
         let analyser;
         let dataArray;
         let isDetecting = false;
-        let detectedNotes = [];
+        let detectedSequence = [];
         const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         let practiceActive = false;
         let lastSuccessfulPitch = null;
         let silenceFrames = 0;
         const SILENCE_THRESHOLD = 30;
+        let lastDetectedNote = null;
+        let noteStableFrames = 0;
+        const NOTE_STABLE_THRESHOLD = 10;
         
         // ===== 遊戲狀態 =====
         let currentAnswer = [];
@@ -647,7 +657,6 @@
                 
                 alert(message);
                 
-                // 嘗試獲取權限
                 if (audioInputs.length > 0) {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -696,13 +705,9 @@
             }
         }
 
-        // 核心音高偵測演算法 (自相關函數法)
         function autoCorrelate(buf, sampleRate, sensitivity) {
             const SIZE = buf.length;
-            let bestOffset = -1;
-            let bestCorrelation = -1;
 
-            // 進行正規化
             const rms = Math.sqrt(buf.reduce((sum, val) => sum + val * val, 0) / SIZE);
             if (rms < 0.01) {
                 return null;
@@ -715,14 +720,12 @@
                 }
             }
             
-            // 尋找最佳偏移量 (週期)
             let d = 0;
             while (d < SIZE && c[d] > 0) {
                 d++;
             }
             d = Math.max(0, d - 1);
 
-            // 尋找最高峰
             let maxVal = -1;
             let maxIndex = -1;
             for (let i = d; i < SIZE; i++) {
@@ -732,7 +735,6 @@
                 }
             }
             
-            // 再次確認最高峰，以排除雜訊
             if (maxIndex === -1 || maxIndex === 0) {
                 return null;
             }
@@ -743,7 +745,6 @@
                 return null;
             }
 
-            // 進行拋物線內插法以獲得更精確的頻率
             const a = c[maxIndex - 1];
             const b = c[maxIndex];
             const dVal = c[maxIndex + 1];
@@ -777,6 +778,8 @@
                 silenceFrames++;
                 if (silenceFrames > SILENCE_THRESHOLD) {
                     lastSuccessfulPitch = null;
+                    lastDetectedNote = null;
+                    noteStableFrames = 0;
                     document.getElementById('noteDisplay').textContent = '--';
                     document.getElementById('frequencyDisplay').textContent = '-- Hz';
                     document.getElementById('centsDisplay').textContent = '-- cents';
@@ -785,7 +788,6 @@
             } else {
                 silenceFrames = 0;
                 
-                // 使用內建的音高檢測函數
                 const frequency = autoCorrelate(dataArray, audioContext.sampleRate, pitchSensitivity);
                 
                 if (frequency) {
@@ -795,12 +797,19 @@
                     
                     lastSuccessfulPitch = { frequency, noteName, midiNote, cents };
                     
-                    // 直接記錄檢測到的實際音符，不進行任何移調
-                    if (!detectedNotes.includes(noteName)) {
-                        detectedNotes.push(noteName);
+                    if (noteName === lastDetectedNote) {
+                        noteStableFrames++;
+                    } else {
+                        lastDetectedNote = noteName;
+                        noteStableFrames = 1;
+                    }
+                    
+                    if (noteStableFrames >= NOTE_STABLE_THRESHOLD) {
+                        addNoteToSequence(noteName);
                     }
                 } else {
                     lastSuccessfulPitch = null;
+                    noteStableFrames = 0;
                 }
             }
             
@@ -811,31 +820,45 @@
                 updateTunerIndicator(lastSuccessfulPitch.cents);
                 statusText = '正在聆聽...';
             } else {
-                statusText = '無法從訊號中判斷出清晰的音高';
+                statusText = '無法從訊號中判斷出清楚的音高';
             }
             
             document.getElementById('statusDisplay').textContent = statusText;
-            document.getElementById('detectedNotes').textContent = 
-                detectedNotes.length > 0 ? detectedNotes.join(', ') : '--';
+            updateSequenceDisplay();
 
             requestAnimationFrame(processAudio);
         }
 
-        // ===== 初始化 =====
+        function addNoteToSequence(noteName) {
+            if (detectedSequence.length === 0 || detectedSequence[detectedSequence.length - 1] !== noteName) {
+                detectedSequence.push(noteName);
+            }
+        }
+
+        function updateSequenceDisplay() {
+            const detectedElement = document.getElementById('detectedSequence');
+            
+            if (detectedElement) {
+                detectedElement.textContent = detectedSequence.length > 0 ? detectedSequence.join(' → ') : '--';
+            }
+        }
+
+        function resetSequence() {
+            detectedSequence = [];
+            updateSequenceDisplay();
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             updateChordCompositions();
             
-            // 監聽設定變更
             document.getElementById('chordType').addEventListener('change', updateChordCompositions);
             
-            // 監聽音量門檻值滑動條
             const volumeThresholdSlider = document.getElementById('volumeThreshold');
             const volumeThresholdDisplay = document.getElementById('volumeThresholdDisplay');
             volumeThresholdSlider.addEventListener('input', () => {
                 volumeThresholdDisplay.textContent = volumeThresholdSlider.value;
             });
 
-            // 監聽音高敏感度滑動條
             const pitchSensitivitySlider = document.getElementById('pitchSensitivity');
             const pitchSensitivityDisplay = document.getElementById('pitchSensitivityDisplay');
             pitchSensitivitySlider.addEventListener('input', () => {
@@ -843,7 +866,6 @@
             });
         });
 
-        // ===== 設定更新函數 =====
         function updateChordCompositions() {
             const chordType = document.getElementById('chordType').value;
             const container = document.getElementById('chordCompositions');
@@ -866,12 +888,11 @@
                     div.classList.toggle('selected', div.querySelector('input').checked);
                 });
                 
-                div.classList.add('selected'); // 預設選中
+                div.classList.add('selected');
                 container.appendChild(div);
             });
         }
 
-        // ===== 和弦邏輯函數 =====
         function getPitchNumber(noteName) {
             const sharps = (noteName.match(/#/g) || []).length;
             const flats = (noteName.match(/b/g) || []).length;
@@ -884,7 +905,6 @@
             return pitchNum;
         }
 
-        // 修正：移調函數用於生成題目答案
         function transposeNote(note, instrumentKey) {
             const semitones = transpositionTable[instrumentKey] || 0;
             const pitchNum = getPitchNumber(note);
@@ -907,31 +927,43 @@
             }
         }
 
-        function checkChordMatch(detected, expected) {
+        function checkSequenceMatch(detected, expected) {
             const enharmonicMap = {
                 'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb',
                 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#'
             };
 
-            const expandedDetected = new Set();
-            detected.forEach(note => {
-                expandedDetected.add(note);
-                if (enharmonicMap[note]) {
-                    expandedDetected.add(enharmonicMap[note]);
-                }
-            });
+            function normalizeNote(note) {
+                return enharmonicMap[note] || note;
+            }
 
-            const expectedSet = new Set(expected);
-            const missing = expected.filter(note => !expandedDetected.has(note));
+            let expectedIndex = 0;
+            const matchedNotes = [];
+            
+            for (let i = 0; i < detected.length && expectedIndex < expected.length; i++) {
+                const detectedNote = detected[i];
+                const expectedNote = expected[expectedIndex];
+                
+                if (detectedNote === expectedNote || 
+                    normalizeNote(detectedNote) === expectedNote ||
+                    detectedNote === normalizeNote(expectedNote)) {
+                    matchedNotes.push(detectedNote);
+                    expectedIndex++;
+                }
+            }
+            
+            const isCorrect = expectedIndex === expected.length;
+            const missing = expected.slice(expectedIndex);
             
             return {
-                isCorrect: missing.length === 0 && detected.length >= expected.length,
+                isCorrect: isCorrect,
                 missing: missing,
-                detected: detected
+                detected: detected,
+                matched: matchedNotes,
+                progress: expectedIndex
             };
         }
 
-        // ===== 練習控制函數 =====
         async function startPractice() {
             const selectedCompositions = getSelectedCompositions();
             if (selectedCompositions.length === 0) {
@@ -1006,8 +1038,9 @@
                 clearTimeout(timerId);
             }
 
-            detectedNotes = [];
-            document.getElementById('detectedNotes').textContent = '--';
+            detectedSequence = [];
+            lastDetectedNote = null;
+            noteStableFrames = 0;
             document.getElementById('resultDisplay').textContent = '';
             document.getElementById('volumeLevel').style.width = '0%';
             document.getElementById('noteDisplay').textContent = '--';
@@ -1036,7 +1069,6 @@
             const instrumentKey = document.getElementById('instrumentKey').value;
             
             const invertedNotes = invertChord(chordNotes, startNote);
-            // 修正：根據選擇的樂器移調題目
             const transposedNotes = transposeChord(invertedNotes, instrumentKey);
             
             currentAnswer = transposedNotes;
@@ -1047,6 +1079,7 @@
             document.getElementById('statusDisplay').textContent = '正在聆聽...';
             document.getElementById('statusDisplay').style.color = '#3498db';
 
+            updateSequenceDisplay();
             remainingTime = parseInt(document.getElementById('timerDuration').value);
             updateTimer();
         }
@@ -1055,7 +1088,7 @@
             document.getElementById('timerDisplay').textContent = `⏱️ 剩餘時間: ${remainingTime} 秒`;
             
             if (remainingTime > 0) {
-                const result = checkChordMatch(detectedNotes, currentAnswer);
+                const result = checkSequenceMatch(detectedSequence, currentAnswer);
                 if (result.isCorrect) {
                     showResult(true, result);
                     clearTimeout(timerId);
@@ -1066,36 +1099,33 @@
                 remainingTime--;
                 timerId = setTimeout(updateTimer, 1000);
             } else {
-                const result = checkChordMatch(detectedNotes, currentAnswer);
+                const result = checkSequenceMatch(detectedSequence, currentAnswer);
                 showResult(result.isCorrect, result);
             }
         }
 
-        // 修改後的 showResult 函數
         function showResult(isCorrect, result) {
             const resultDisplay = document.getElementById('resultDisplay');
             const statusDisplay = document.getElementById('statusDisplay');
             
             if (isCorrect) {
-                resultDisplay.textContent = '✅ 正確！';
+                resultDisplay.textContent = '✅ 序列正確！';
                 resultDisplay.style.color = '#27ae60';
                 statusDisplay.textContent = '檢測完成';
                 statusDisplay.style.color = '#27ae60';
             } else {
-                resultDisplay.textContent = '❌ 錯誤或不完整';
+                resultDisplay.textContent = '❌ 序列不正確或不完整';
                 resultDisplay.style.color = '#e74c3c';
-                statusDisplay.textContent = `缺少: ${result.missing.join(', ')}`;
+                statusDisplay.textContent = `進度: ${result.progress}/${currentAnswer.length}`;
                 statusDisplay.style.color = '#e74c3c';
             }
             
-            // 使用新結構，與題目頁面格式一致
-            document.getElementById('chordNameDisplay').textContent = `期望音符: ${currentAnswer.join(', ')}`;
-            document.getElementById('instructionDisplay').textContent = `檢測到: ${result.detected.join(', ')}`;
+            document.getElementById('chordNameDisplay').textContent = `正確答案: ${currentAnswer.join(', ')}`;
+            document.getElementById('instructionDisplay').textContent = `偵測到: ${result.detected.join(', ')}`;
         }
 
-        // 修改後的 showAnswer 函數
         function showAnswer() {
-            const answerText = `正確答案: ${currentAnswer.join(', ')}`;
+            const answerText = `正確序列: ${currentAnswer.join(' → ')}`;
             document.getElementById('chordNameDisplay').textContent = `${currentChordName}`;
             document.getElementById('instructionDisplay').textContent = `${answerText}`;
 
@@ -1103,74 +1133,62 @@
             document.getElementById('statusDisplay').style.color = '#f39c12';
         }
 
-        // ===== 修正後的和弦播放函數 =====
         function playChordAudio() {
             if (!audioContext) {
                 alert('請先開始練習以初始化音頻系統');
                 return;
             }
 
-            // 確保音頻上下文處於運行狀態
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
 
-            const duration = 2.5; // 增加播放時間
+            const duration = 2.5;
             const attackTime = 0.1;
             const releaseTime = 0.3;
             
-            // 為每個音符創建振盪器
             currentAnswer.forEach((noteName, index) => {
-                // 修正：使用更可靠的音符到頻率轉換
                 let midiNote = noteNameToMidi[noteName];
                 
-                // 如果找不到直接對應，嘗試基礎音符計算
                 if (midiNote === undefined) {
                     const pitchNum = getPitchNumber(noteName);
                     if (pitchNum !== null) {
-                        midiNote = 60 + pitchNum; // C4 = 60
+                        midiNote = 60 + pitchNum;
                     }
                 }
                 
                 if (midiNote !== undefined) {
                     const frequency = getFrequencyFromNote(midiNote);
                     
-                    // 創建振盪器和增益節點
                     const oscillator = audioContext.createOscillator();
                     const gainNode = audioContext.createGain();
                     
-                    // 設定波形類型（使用正弦波產生柔和音色）
                     oscillator.type = 'sine';
                     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
                     
-                    // 設定音量包絡（ADSR）
-                    const startTime = audioContext.currentTime + (index * 0.05); // 輕微延遲每個音符
+                    const startTime = audioContext.currentTime + (index * 0.8);
                     gainNode.gain.setValueAtTime(0, startTime);
-                    gainNode.gain.linearRampToValueAtTime(0.2, startTime + attackTime); // 起音
-                    gainNode.gain.setValueAtTime(0.2, startTime + duration - releaseTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration); // 釋音
+                    gainNode.gain.linearRampToValueAtTime(0.3, startTime + attackTime);
+                    gainNode.gain.setValueAtTime(0.3, startTime + duration - releaseTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
                     
-                    // 連接音頻節點
                     oscillator.connect(gainNode);
                     gainNode.connect(audioContext.destination);
                     
-                    // 啟動和停止振盪器
                     oscillator.start(startTime);
                     oscillator.stop(startTime + duration);
                 }
             });
 
-            // 更新狀態顯示
-            document.getElementById('statusDisplay').textContent = '正在播放和弦...';
+            document.getElementById('statusDisplay').textContent = '正在播放序列...';
             document.getElementById('statusDisplay').style.color = '#9b59b6';
             
-            // 播放完成後更新狀態
             setTimeout(() => {
-                if (document.getElementById('statusDisplay').textContent === '正在播放和弦...') {
+                if (document.getElementById('statusDisplay').textContent === '正在播放序列...') {
                     document.getElementById('statusDisplay').textContent = '播放完成';
                     document.getElementById('statusDisplay').style.color = '#27ae60';
                 }
-            }, duration * 1000 + 500);
+            }, (currentAnswer.length * 0.8 + 2.5) * 1000);
         }
 
         function backToSettings() {
@@ -1191,15 +1209,16 @@
             document.getElementById('practicePanel').style.display = 'none';
             document.getElementById('settingsPanel').style.display = 'block';
             
-            detectedNotes = [];
+            detectedSequence = [];
             currentAnswer = [];
             remainingTime = 0;
             practiceActive = false;
             lastSuccessfulPitch = null;
             silenceFrames = 0;
+            lastDetectedNote = null;
+            noteStableFrames = 0;
         }
 
-        // ===== 鍵盤快捷鍵 =====
         document.addEventListener('keydown', (e) => {
             if (practiceActive) {
                 switch(e.code) {
@@ -1215,6 +1234,10 @@
                         e.preventDefault();
                         playChordAudio();
                         break;
+                    case 'KeyR':
+                        e.preventDefault();
+                        resetSequence();
+                        break;
                     case 'Escape':
                         e.preventDefault();
                         backToSettings();
@@ -1224,7 +1247,7 @@
         });
 
         window.addEventListener('load', () => {
-            console.log('和弦訓練器已載入完成');
+            console.log('和弦序列訓練器已載入完成');
         });
     </script>
 </body>
