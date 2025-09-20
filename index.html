@@ -28,6 +28,41 @@
         .header {
             text-align: center;
             margin-bottom: 30px;
+            position: relative;
+        }
+
+        .language-switcher {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 5px;
+        }
+
+        .language-switcher button {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: bold;
+        }
+
+        .language-switcher button.active {
+            background: #f39c12;
+            box-shadow: 0 2px 10px rgba(243, 156, 18, 0.4);
+        }
+
+        .language-switcher button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .language-switcher button.active:hover {
+            background: #e67e22;
         }
 
         h1 {
@@ -363,108 +398,118 @@
             .checkbox-group {
                 grid-template-columns: 1fr;
             }
+
+            .language-switcher {
+                position: relative;
+                margin-bottom: 20px;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎵 和弦反應訓練器</h1>
-            <div class="subtitle">音高辨識 + 和弦練習 (序列檢測版)</div>
+            <div class="language-switcher">
+                <button id="langZh" class="active" onclick="switchLanguage('zh')">中文</button>
+                <button id="langEn" onclick="switchLanguage('en')">English</button>
+            </div>
+            <h1 data-key="title">🎵 和弦反應訓練器</h1>
+            <div class="subtitle" data-key="subtitle">音高辨識 + 和弦練習 (序列檢測版)</div>
         </div>
 
         <div id="settingsPanel" class="settings-panel">
             <div class="setting-group">
-                <label class="setting-label">1. 選擇和弦類型</label>
+                <label class="setting-label" data-key="label_chord_type">1. 選擇和弦類型</label>
                 <select id="chordType">
-                    <option value="triads">三和弦 (Triads)</option>
-                    <option value="seventh">七和弦 (Seventh Chords)</option>
+                    <option value="triads" data-key="triads">三和弦 (Triads)</option>
+                    <option value="seventh" data-key="seventh">七和弦 (Seventh Chords)</option>
                 </select>
             </div>
 
             <div class="setting-group">
-                <label class="setting-label">2. 選擇和弦組成</label>
+                <label class="setting-label" data-key="label_chord_composition">2. 選擇和弦組成</label>
                 <div id="chordCompositions" class="checkbox-group">
-                    </div>
+                </div>
             </div>
             
             <div class="setting-group">
-                <label class="setting-label">3. 麥克風音量門檻值</label>
+                <label class="setting-label" data-key="label_volume_threshold">3. 麥克風音量門檻值</label>
                 <div class="volume-control">
-                    <span>安靜</span>
+                    <span data-key="quiet">安靜</span>
                     <input type="range" id="volumeThreshold" name="volumeThreshold" min="0.001" max="0.1" step="0.001" value="0.003">
-                    <span>大聲</span>
+                    <span data-key="loud">大聲</span>
                     <span id="volumeThresholdDisplay">0.003</span>
                 </div>
-                <div class="info-text" style="margin-top: 10px;">
+                <div class="info-text" data-key="volume_info" style="margin-top: 10px;">
                     數值越低越敏感，越高越需要大聲才能偵測。<br>
                     若背景雜音較多，請提高此數值。
                 </div>
             </div>
 
             <div class="setting-group">
-                <label class="setting-label">4. 音高偵測敏感度</label>
+                <label class="setting-label" data-key="label_pitch_sensitivity">4. 音高偵測敏感度</label>
                 <div class="pitch-control">
-                    <span>敏感</span>
+                    <span data-key="sensitive">敏感</span>
                     <input type="range" id="pitchSensitivity" name="pitchSensitivity" min="0.75" max="0.95" step="0.01" value="0.85">
-                    <span>穩定</span>
+                    <span data-key="stable">穩定</span>
                     <span id="pitchSensitivityDisplay">0.85</span>
                 </div>
-                <div class="info-text" style="margin-top: 10px;">
+                <div class="info-text" data-key="pitch_info" style="margin-top: 10px;">
                     數值越低，越容易偵測到音高，但可能不穩定。<br>
                     數值越高，越穩定，但可能無法偵測到微弱音高。
                 </div>
             </div>
 
             <div class="setting-group">
-                <label class="setting-label">5. 選擇開始音</label>
+                <label class="setting-label" data-key="label_start_note">5. 選擇開始音</label>
                 <select id="startNote">
-                    <option value="root">根音 (Root)</option>
-                    <option value="third">三音 (Third)</option>
-                    <option value="fifth">五音 (Fifth)</option>
-                    <option value="seventh">七音 (Seventh)</option>
+                    <option value="root" data-key="root">根音 (Root)</option>
+                    <option value="third" data-key="third">三音 (Third)</option>
+                    <option value="fifth" data-key="fifth">五音 (Fifth)</option>
+                    <option value="seventh" data-key="seventh_note">七音 (Seventh)</option>
                 </select>
             </div>
 
             <div class="setting-group">
-                <label class="setting-label">6. 選擇樂器調性</label>
+                <label class="setting-label" data-key="label_instrument_key">6. 選擇樂器調性</label>
                 <select id="instrumentKey">
-                    <option value="C">C調 (鋼琴、吉他)</option>
-                    <option value="Bb">Bb調 (薩克斯風、小號)</option>
-                    <option value="Eb">Eb調 (中音薩克斯風)</option>
-                    <option value="F">F調 (法國號)</option>
+                    <option value="C" data-key="c_key">C調 (鋼琴、吉他)</option>
+                    <option value="Bb" data-key="bb_key">Bb調 (薩克斯風、小號)</option>
+                    <option value="Eb" data-key="eb_key">Eb調 (中音薩克斯風)</option>
+                    <option value="F" data-key="f_key">F調 (法國號)</option>
                 </select>
             </div>
 
             <div class="setting-group">
-                <label class="setting-label">7. 選擇答題時間</label>
+                <label class="setting-label" data-key="label_timer">7. 選擇答題時間</label>
                 <select id="timerDuration">
-                    <option value="5">5秒</option>
-                    <option value="10" selected>10秒</option>
-                    <option value="15">15秒</option>
-                    <option value="20">20秒</option>
-                    <option value="25">25秒</option>
-                    <option value="30">30秒</option>
+                    <option value="5" data-key="seconds_5">5秒</option>
+                    <option value="10" data-key="seconds_10" selected>10秒</option>
+                    <option value="15" data-key="seconds_15">15秒</option>
+                    <option value="20" data-key="seconds_20">20秒</option>
+                    <option value="25" data-key="seconds_25">25秒</option>
+                    <option value="30" data-key="seconds_30">30秒</option>
                 </select>
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
-                <button class="start-btn" onclick="startPractice()">🎼 開始練習</button>
+                <button class="start-btn" onclick="startPractice()" data-key="start_practice">🎼 開始練習</button>
             </div>
 
             <div class="info-text" style="margin-top: 20px;">
-                💡 請確保麥克風已連接並允許瀏覽器使用麥克風權限<br>
-                <button onclick="checkAudioDevices()" style="margin-top: 10px; padding: 8px 15px; font-size: 0.9rem;">🎤 檢查音頻設備</button>
+                <span data-key="mic_info">💡 請確保麥克風已連接並允許瀏覽器使用麥克風權限</span><br>
+                <button onclick="checkAudioDevices()" style="margin-top: 10px; padding: 8px 15px; font-size: 0.9rem;" data-key="check_devices">🎤 檢查音頻設備</button>
             </div>
         </div>
 
         <div id="practicePanel" class="practice-panel">
             <div class="chord-display practice-content" id="chordDisplay">
-                <h1 id="chordNameDisplay">準備中...</h1>
+                <h1 id="chordNameDisplay" data-key="preparing">準備中...</h1>
                 <p id="instructionDisplay"></p>
             </div>
             
-            <div class="timer-display" id="timerDisplay">⏱️ 剩餘時間: -- 秒</div>
+            <div class="timer-display" id="timerDisplay">⏱️ <span data-key="remaining_time">剩餘時間</span>: -- <span data-key="seconds">秒</span></div>
             
             <div class="live-pitch-display">
                 <div class="live-note" id="noteDisplay">--</div>
@@ -479,26 +524,208 @@
                 </div>
             </div>
 
-            <div class="status-display" id="statusDisplay">正在聆聽...</div>
+            <div class="status-display" id="statusDisplay" data-key="listening">正在聆聽...</div>
             
             <div class="sequence-display">
-                <strong>偵測序列:</strong>
+                <strong data-key="detected_sequence">偵測序列:</strong>
                 <div id="detectedSequence">--</div>
             </div>
             
             <div class="result-display" id="resultDisplay"></div>
 
             <div class="control-buttons">
-                <button onclick="showAnswer()">🔍 顯示答案</button>
-                <button onclick="playChordAudio()">🔊 播放和弦</button>
-                <button onclick="nextQuestion()">⭐ 下一題</button>
-                <button onclick="resetSequence()">🔄 重設序列</button>
-                <button class="secondary" onclick="backToSettings()">⚙️ 返回設定</button>
+                <button onclick="showAnswer()" data-key="show_answer">🔍 顯示答案</button>
+                <button onclick="playChordAudio()" data-key="play_chord">🔊 播放和弦</button>
+                <button onclick="nextQuestion()" data-key="next_question">⭐ 下一題</button>
+                <button onclick="resetSequence()" data-key="reset_sequence">🔄 重設序列</button>
+                <button class="secondary" onclick="backToSettings()" data-key="back_settings">⚙️ 返回設定</button>
             </div>
         </div>
     </div>
 
     <script>
+        // ===== 語言系統 =====
+        let currentLanguage = 'zh';
+        
+        const translations = {
+            zh: {
+                title: "🎵 和弦反應訓練器",
+                subtitle: "音高辨識 + 和弦練習 (序列檢測版)",
+                label_chord_type: "1. 選擇和弦類型",
+                triads: "三和弦 (Triads)",
+                seventh: "七和弦 (Seventh Chords)",
+                label_chord_composition: "2. 選擇和弦組成",
+                label_volume_threshold: "3. 麥克風音量門檻值",
+                quiet: "安靜",
+                loud: "大聲",
+                volume_info: "數值越低越敏感，越高越需要大聲才能偵測。<br>若背景雜音較多，請提高此數值。",
+                label_pitch_sensitivity: "4. 音高偵測敏感度",
+                sensitive: "敏感",
+                stable: "穩定",
+                pitch_info: "數值越低，越容易偵測到音高，但可能不穩定。<br>數值越高，越穩定，但可能無法偵測到微弱音高。",
+                label_start_note: "5. 選擇開始音",
+                root: "根音 (Root)",
+                third: "三音 (Third)",
+                fifth: "五音 (Fifth)",
+                seventh_note: "七音 (Seventh)",
+                label_instrument_key: "6. 選擇樂器調性",
+                c_key: "C調 (鋼琴、吉他)",
+                bb_key: "Bb調 (薩克斯風、小號)",
+                eb_key: "Eb調 (中音薩克斯風)",
+                f_key: "F調 (法國號)",
+                label_timer: "7. 選擇答題時間",
+                seconds_5: "5秒",
+                seconds_10: "10秒",
+                seconds_15: "15秒",
+                seconds_20: "20秒",
+                seconds_25: "25秒",
+                seconds_30: "30秒",
+                start_practice: "🎼 開始練習",
+                mic_info: "💡 請確保麥克風已連接並允許瀏覽器使用麥克風權限",
+                check_devices: "🎤 檢查音頻設備",
+                preparing: "準備中...",
+                remaining_time: "剩餘時間",
+                seconds: "秒",
+                listening: "正在聆聽...",
+                detected_sequence: "偵測序列:",
+                show_answer: "🔍 顯示答案",
+                play_chord: "🔊 播放和弦",
+                next_question: "⭐ 下一題",
+                reset_sequence: "🔄 重設序列",
+                back_settings: "⚙️ 返回設定",
+                play_with_instrument: "請用樂器演奏",
+                sequence_correct: "✅ 序列正確！",
+                sequence_incorrect: "❌ 序列不正確或不完整",
+                progress: "進度",
+                correct_sequence: "正確序列",
+                detected: "偵測到",
+                answer_shown: "答案已顯示",
+                playing_sequence: "正在播放序列...",
+                playback_complete: "播放完成",
+                detection_complete: "檢測完成",
+                volume_too_low: "音量過低，請提高音量或降低門檻值",
+                cannot_detect_pitch: "無法從訊號中判斷出清楚的音高"
+            },
+            en: {
+                title: "🎵 Chord Response Trainer",
+                subtitle: "Pitch Recognition + Chord Practice (Sequence Detection)",
+                label_chord_type: "1. Select Chord Type",
+                triads: "Triads",
+                seventh: "Seventh Chords",
+                label_chord_composition: "2. Select Chord Composition",
+                label_volume_threshold: "3. Microphone Volume Threshold",
+                quiet: "Quiet",
+                loud: "Loud",
+                volume_info: "Lower values are more sensitive, higher values require louder volume to detect.<br>If there's background noise, increase this value.",
+                label_pitch_sensitivity: "4. Pitch Detection Sensitivity",
+                sensitive: "Sensitive",
+                stable: "Stable",
+                pitch_info: "Lower values detect pitch more easily but may be unstable.<br>Higher values are more stable but may not detect weak pitches.",
+                label_start_note: "5. Select Starting Note",
+                root: "Root",
+                third: "Third",
+                fifth: "Fifth",
+                seventh_note: "Seventh",
+                label_instrument_key: "6. Select Instrument Key",
+                c_key: "C Key (Piano, Guitar)",
+                bb_key: "Bb Key (Saxophone, Trumpet)",
+                eb_key: "Eb Key (Alto Saxophone)",
+                f_key: "F Key (French Horn)",
+                label_timer: "7. Select Answer Time",
+                seconds_5: "5 seconds",
+                seconds_10: "10 seconds",
+                seconds_15: "15 seconds",
+                seconds_20: "20 seconds",
+                seconds_25: "25 seconds",
+                seconds_30: "30 seconds",
+                start_practice: "🎼 Start Practice",
+                mic_info: "💡 Please ensure microphone is connected and allow browser microphone permission",
+                check_devices: "🎤 Check Audio Devices",
+                preparing: "Preparing...",
+                remaining_time: "Time Left",
+                seconds: "sec",
+                listening: "Listening...",
+                detected_sequence: "Detected Sequence:",
+                show_answer: "🔍 Show Answer",
+                play_chord: "🔊 Play Chord",
+                next_question: "⭐ Next Question",
+                reset_sequence: "🔄 Reset Sequence",
+                back_settings: "⚙️ Back to Settings",
+                play_with_instrument: "Please play with instrument",
+                sequence_correct: "✅ Sequence Correct!",
+                sequence_incorrect: "❌ Sequence Incorrect or Incomplete",
+                progress: "Progress",
+                correct_sequence: "Correct Sequence",
+                detected: "Detected",
+                answer_shown: "Answer Shown",
+                playing_sequence: "Playing sequence...",
+                playback_complete: "Playback Complete",
+                detection_complete: "Detection Complete",
+                volume_too_low: "Volume too low, please increase volume or lower threshold",
+                cannot_detect_pitch: "Cannot determine clear pitch from signal"
+            }
+        };
+
+        const chordTranslations = {
+            zh: {
+                "大三和弦": "大三和弦",
+                "小三和弦": "小三和弦", 
+                "增三和弦": "增三和弦",
+                "減三和弦": "減三和弦",
+                "大七和弦": "大七和弦",
+                "小七和弦": "小七和弦",
+                "屬七和弦": "屬七和弦",
+                "半減七和弦": "半減七和弦",
+                "減七和弦": "減七和弦",
+                "小大七和弦": "小大七和弦",
+                "屬增七和弦": "屬增七和弦",
+                "增大七和弦": "增大七和弦"
+            },
+            en: {
+                "大三和弦": "Major Triad",
+                "小三和弦": "Minor Triad",
+                "增三和弦": "Augmented Triad", 
+                "減三和弦": "Diminished Triad",
+                "大七和弦": "Major 7th",
+                "小七和弦": "Minor 7th",
+                "屬七和弦": "Dominant 7th",
+                "半減七和弦": "Half-dim 7th",
+                "減七和弦": "Diminished 7th",
+                "小大七和弦": "Minor Major 7th",
+                "屬增七和弦": "Dom Aug 7th",
+                "增大七和弦": "Aug Major 7th"
+            }
+        };
+
+        function switchLanguage(lang) {
+            currentLanguage = lang;
+            
+            // 更新語言按鈕狀態
+            document.getElementById('langZh').classList.toggle('active', lang === 'zh');
+            document.getElementById('langEn').classList.toggle('active', lang === 'en');
+            
+            // 更新所有翻譯元素
+            const elements = document.querySelectorAll('[data-key]');
+            elements.forEach(element => {
+                const key = element.getAttribute('data-key');
+                if (translations[lang] && translations[lang][key]) {
+                    if (element.tagName === 'INPUT' || element.tagName === 'BUTTON') {
+                        if (element.type === 'button' || element.tagName === 'BUTTON') {
+                            element.textContent = translations[lang][key];
+                        }
+                    } else {
+                        element.innerHTML = translations[lang][key];
+                    }
+                }
+            });
+            
+            // 更新和弦組成選項
+            updateChordCompositions();
+            
+            // 保存語言設定到本地
+            localStorage.setItem('chordTrainerLanguage', lang);
+        }
+
         // ===== 和弦資料庫 =====
         const chordCompositions = {
             triads: ["大三和弦", "小三和弦", "增三和弦", "減三和弦"],
@@ -644,15 +871,28 @@
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const audioInputs = devices.filter(device => device.kind === 'audioinput');
                 
-                let message = `發現 ${audioInputs.length} 個音頻輸入設備：\n\n`;
+                let message = '';
                 
-                if (audioInputs.length === 0) {
-                    message = '⚠️ 沒有發現任何音頻輸入設備！\n\n請檢查：\n1. 麥克風是否已連接\n2. 驅動程式是否正確安裝\n3. 系統音頻設定';
+                if (currentLanguage === 'zh') {
+                    message = `發現 ${audioInputs.length} 個音頻輸入設備：\n\n`;
+                    if (audioInputs.length === 0) {
+                        message = '⚠️ 沒有發現任何音頻輸入設備！\n\n請檢查：\n1. 麥克風是否已連接\n2. 驅動程式是否正確安裝\n3. 系統音頻設定';
+                    } else {
+                        audioInputs.forEach((device, index) => {
+                            message += `${index + 1}. ${device.label || '未命名設備'}\n`;
+                        });
+                        message += '\n如果標籤顯示為空，請允許瀏覽器權限後重新檢查。';
+                    }
                 } else {
-                    audioInputs.forEach((device, index) => {
-                        message += `${index + 1}. ${device.label || '未命名設備'}\n`;
-                    });
-                    message += '\n如果標籤顯示為空，請允許瀏覽器權限後重新檢查。';
+                    message = `Found ${audioInputs.length} audio input devices:\n\n`;
+                    if (audioInputs.length === 0) {
+                        message = '⚠️ No audio input devices found!\n\nPlease check:\n1. Microphone is connected\n2. Drivers are properly installed\n3. System audio settings';
+                    } else {
+                        audioInputs.forEach((device, index) => {
+                            message += `${index + 1}. ${device.label || 'Unnamed Device'}\n`;
+                        });
+                        message += '\nIf labels are empty, please allow browser permissions and check again.';
+                    }
                 }
                 
                 alert(message);
@@ -660,15 +900,24 @@
                 if (audioInputs.length > 0) {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        alert('✅ 麥克風權限已獲取，可以開始練習了。');
+                        const successMsg = currentLanguage === 'zh' ? 
+                            '✅ 麥克風權限已獲取，可以開始練習了。' : 
+                            '✅ Microphone permission granted, ready to start practice.';
+                        alert(successMsg);
                         stream.getTracks().forEach(track => track.stop());
                     } catch (error) {
-                        alert(`❌ 麥克風權限被拒絕或設備忙碌：${error.message}`);
+                        const errorMsg = currentLanguage === 'zh' ? 
+                            `❌ 麥克風權限被拒絕或設備忙碌：${error.message}` : 
+                            `❌ Microphone permission denied or device busy: ${error.message}`;
+                        alert(errorMsg);
                     }
                 }
                 
             } catch (error) {
-                alert(`檢查設備時發生錯誤：${error.message}`);
+                const errorMsg = currentLanguage === 'zh' ? 
+                    `檢查設備時發生錯誤：${error.message}` : 
+                    `Error checking devices: ${error.message}`;
+                alert(errorMsg);
             }
         }
 
@@ -774,7 +1023,7 @@
             let statusText = '';
             
             if (rms < volumeThreshold) {
-                statusText = '音量過低，請提高音量或降低門檻值';
+                statusText = translations[currentLanguage].volume_too_low;
                 silenceFrames++;
                 if (silenceFrames > SILENCE_THRESHOLD) {
                     lastSuccessfulPitch = null;
@@ -818,9 +1067,9 @@
                 document.getElementById('frequencyDisplay').textContent = `${lastSuccessfulPitch.frequency.toFixed(2)} Hz`;
                 document.getElementById('centsDisplay').textContent = `${lastSuccessfulPitch.cents} cents`;
                 updateTunerIndicator(lastSuccessfulPitch.cents);
-                statusText = '正在聆聽...';
+                statusText = translations[currentLanguage].listening;
             } else {
-                statusText = '無法從訊號中判斷出清楚的音高';
+                statusText = translations[currentLanguage].cannot_detect_pitch;
             }
             
             document.getElementById('statusDisplay').textContent = statusText;
@@ -848,7 +1097,12 @@
             updateSequenceDisplay();
         }
 
+        // ===== 初始化 =====
         document.addEventListener('DOMContentLoaded', function() {
+            // 載入保存的語言設定
+            const savedLang = localStorage.getItem('chordTrainerLanguage') || 'zh';
+            switchLanguage(savedLang);
+            
             updateChordCompositions();
             
             document.getElementById('chordType').addEventListener('change', updateChordCompositions);
@@ -875,9 +1129,10 @@
             compositions.forEach(comp => {
                 const div = document.createElement('div');
                 div.className = 'checkbox-item';
+                const displayName = chordTranslations[currentLanguage][comp] || comp;
                 div.innerHTML = `
                     <input type="checkbox" id="chord_${comp}" value="${comp}" checked>
-                    <label for="chord_${comp}">${comp}</label>
+                    <label for="chord_${comp}">${displayName}</label>
                 `;
                 
                 div.addEventListener('click', function(e) {
@@ -967,7 +1222,8 @@
         async function startPractice() {
             const selectedCompositions = getSelectedCompositions();
             if (selectedCompositions.length === 0) {
-                alert('請至少選擇一種和弦組成！');
+                const alertMsg = currentLanguage === 'zh' ? '請至少選擇一種和弦組成！' : 'Please select at least one chord composition!';
+                alert(alertMsg);
                 return;
             }
 
@@ -979,7 +1235,8 @@
                 nextQuestion();
                 practiceActive = true;
             } catch (error) {
-                alert(`無法初始化音頻: ${error.message}`);
+                const errorMsg = currentLanguage === 'zh' ? `無法初始化音頻: ${error.message}` : `Cannot initialize audio: ${error.message}`;
+                alert(errorMsg);
                 backToSettings();
             }
         }
@@ -995,7 +1252,8 @@
                 }
 
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('您的瀏覽器不支援音頻設備存取');
+                    const errorMsg = currentLanguage === 'zh' ? '您的瀏覽器不支援音頻設備存取' : 'Your browser does not support audio device access';
+                    throw new Error(errorMsg);
                 }
                 
                 let stream = null;
@@ -1009,7 +1267,10 @@
                 stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
                 
                 if (!stream) {
-                    throw new Error('無法存取任何音頻設備。請檢查：\n1. 麥克風是否已連接\n2. 瀏覽器權限是否已允許\n3. 是否有其他應用程式正在使用麥克風');
+                    const errorMsg = currentLanguage === 'zh' ? 
+                        '無法存取任何音頻設備。請檢查：\n1. 麥克風是否已連接\n2. 瀏覽器權限是否已允許\n3. 是否有其他應用程式正在使用麥克風' :
+                        'Cannot access any audio device. Please check:\n1. Microphone is connected\n2. Browser permissions are granted\n3. No other apps are using the microphone';
+                    throw new Error(errorMsg);
                 }
                 
                 microphone = audioContext.createMediaStreamSource(stream);
@@ -1052,7 +1313,8 @@
 
             const selectedCompositions = getSelectedCompositions();
             if (selectedCompositions.length === 0) {
-                document.getElementById('chordNameDisplay').textContent = '請返回設定選擇和弦類型！';
+                const returnMsg = currentLanguage === 'zh' ? '請返回設定選擇和弦類型！' : 'Please return to settings to select chord types!';
+                document.getElementById('chordNameDisplay').textContent = returnMsg;
                 document.getElementById('instructionDisplay').textContent = '';
                 return;
             }
@@ -1074,9 +1336,9 @@
             currentAnswer = transposedNotes;
 
             document.getElementById('chordNameDisplay').textContent = `${randomChordName}`;
-            document.getElementById('instructionDisplay').textContent = `請用樂器演奏`;
+            document.getElementById('instructionDisplay').textContent = translations[currentLanguage].play_with_instrument;
             
-            document.getElementById('statusDisplay').textContent = '正在聆聽...';
+            document.getElementById('statusDisplay').textContent = translations[currentLanguage].listening;
             document.getElementById('statusDisplay').style.color = '#3498db';
 
             updateSequenceDisplay();
@@ -1085,7 +1347,8 @@
         }
 
         function updateTimer() {
-            document.getElementById('timerDisplay').textContent = `⏱️ 剩餘時間: ${remainingTime} 秒`;
+            const timeText = `⏱️ ${translations[currentLanguage].remaining_time}: ${remainingTime} ${translations[currentLanguage].seconds}`;
+            document.getElementById('timerDisplay').textContent = timeText;
             
             if (remainingTime > 0) {
                 const result = checkSequenceMatch(detectedSequence, currentAnswer);
@@ -1109,33 +1372,36 @@
             const statusDisplay = document.getElementById('statusDisplay');
             
             if (isCorrect) {
-                resultDisplay.textContent = '✅ 序列正確！';
+                resultDisplay.textContent = translations[currentLanguage].sequence_correct;
                 resultDisplay.style.color = '#27ae60';
-                statusDisplay.textContent = '檢測完成';
+                statusDisplay.textContent = translations[currentLanguage].detection_complete;
                 statusDisplay.style.color = '#27ae60';
             } else {
-                resultDisplay.textContent = '❌ 序列不正確或不完整';
+                resultDisplay.textContent = translations[currentLanguage].sequence_incorrect;
                 resultDisplay.style.color = '#e74c3c';
-                statusDisplay.textContent = `進度: ${result.progress}/${currentAnswer.length}`;
+                statusDisplay.textContent = `${translations[currentLanguage].progress}: ${result.progress}/${currentAnswer.length}`;
                 statusDisplay.style.color = '#e74c3c';
             }
             
-            document.getElementById('chordNameDisplay').textContent = `正確答案: ${currentAnswer.join(', ')}`;
-            document.getElementById('instructionDisplay').textContent = `偵測到: ${result.detected.join(', ')}`;
+            const correctText = `${translations[currentLanguage].correct_sequence}: ${currentAnswer.join(', ')}`;
+            const detectedText = `${translations[currentLanguage].detected}: ${result.detected.join(', ')}`;
+            document.getElementById('chordNameDisplay').textContent = correctText;
+            document.getElementById('instructionDisplay').textContent = detectedText;
         }
 
         function showAnswer() {
-            const answerText = `正確序列: ${currentAnswer.join(' → ')}`;
+            const answerText = `${translations[currentLanguage].correct_sequence}: ${currentAnswer.join(' → ')}`;
             document.getElementById('chordNameDisplay').textContent = `${currentChordName}`;
             document.getElementById('instructionDisplay').textContent = `${answerText}`;
 
-            document.getElementById('statusDisplay').textContent = '答案已顯示';
+            document.getElementById('statusDisplay').textContent = translations[currentLanguage].answer_shown;
             document.getElementById('statusDisplay').style.color = '#f39c12';
         }
 
         function playChordAudio() {
             if (!audioContext) {
-                alert('請先開始練習以初始化音頻系統');
+                const alertMsg = currentLanguage === 'zh' ? '請先開始練習以初始化音頻系統' : 'Please start practice first to initialize audio system';
+                alert(alertMsg);
                 return;
             }
 
@@ -1180,12 +1446,12 @@
                 }
             });
 
-            document.getElementById('statusDisplay').textContent = '正在播放序列...';
+            document.getElementById('statusDisplay').textContent = translations[currentLanguage].playing_sequence;
             document.getElementById('statusDisplay').style.color = '#9b59b6';
             
             setTimeout(() => {
-                if (document.getElementById('statusDisplay').textContent === '正在播放序列...') {
-                    document.getElementById('statusDisplay').textContent = '播放完成';
+                if (document.getElementById('statusDisplay').textContent === translations[currentLanguage].playing_sequence) {
+                    document.getElementById('statusDisplay').textContent = translations[currentLanguage].playback_complete;
                     document.getElementById('statusDisplay').style.color = '#27ae60';
                 }
             }, (currentAnswer.length * 0.8 + 2.5) * 1000);
